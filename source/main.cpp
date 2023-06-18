@@ -136,18 +136,22 @@ extern "C" void userAppInit(void)
     Result res;
 
     res = socketInitializeDefault();
-    if (R_FAILED(res))
-        fatalSimple(res);
+    // if (R_FAILED(res))
+        // fatalSimple(res);
 
     nx_link_sock = nxlinkStdio();
 
     res = romfsInit();
-    if (R_FAILED(res))
-        fatalSimple(res);
+    // if (R_FAILED(res))
+    //     fatalSimple(res);
 
-    res = plInitialize();
-    if (R_FAILED(res))
-        fatalSimple(res);
+    res = plInitialize(PlServiceType_User);
+
+    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+
+    
+    // if (R_FAILED(res))
+    //     fatalSimple(res);
 }
 
 extern "C" void userAppExit(void)
@@ -236,17 +240,20 @@ int main(int argc, char* argv[])
 
     SkCanvas* canvas = surface->getCanvas();
 
+    PadState pad;
+    padInitializeDefault(&pad);
+
     // Main loop
     while (appletMainLoop())
     {
         // Scan all the inputs. This should be done once for each frame
-        hidScanInput();
+        padUpdate(&pad);
 
         // hidKeysDown returns information about which buttons have been
         // just pressed in this frame compared to the previous one
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+        u64 kDown = padGetButtonsDown(&pad);
 
-        if (kDown & KEY_PLUS)
+        if (kDown & HidNpadButton_Plus)
             break; // break in order to return to hbmenu
 
         canvas->clear(SK_ColorBLACK);
