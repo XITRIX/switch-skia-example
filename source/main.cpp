@@ -16,7 +16,11 @@
 #include "include/core/SkFont.h"
 #include "include/effects/SkGradientShader.h"
 #include "include/effects/SkDiscretePathEffect.h"
-#include "include/gpu/GrContext.h"
+
+// #define SK_GL
+#include "include/gpu/ganesh/SkSurfaceGanesh.h"
+#include "include/gpu/GrBackendSurface.h"
+#include "include/gpu/GrDirectContext.h"
 #include "include/gpu/gl/GrGLInterface.h"
 
 #define LTRACEF(fmt, ...) printf("%s: " fmt "\n", __PRETTY_FUNCTION__, ## __VA_ARGS__)
@@ -220,7 +224,7 @@ int main(int argc, char* argv[])
 
     auto interface = GrGLMakeNativeInterface();
 
-    auto ctx = GrContext::MakeGL();
+    auto ctx = GrDirectContext::MakeGL();
 
     GrGLint buffer;
     interface->fFunctions.fGetIntegerv(GL_FRAMEBUFFER_BINDING, &buffer);
@@ -230,9 +234,9 @@ int main(int argc, char* argv[])
 
     GrBackendRenderTarget target(FB_WIDTH, FB_HEIGHT, 0, 8, info);
 
-    SkSurfaceProps props(SkSurfaceProps::kLegacyFontHost_InitType);
+    SkSurfaceProps props;
 
-    auto surface = SkSurface::MakeFromBackendRenderTarget(ctx.get(), target,
+    auto surface = SkSurfaces::WrapBackendRenderTarget(ctx.get(), target,
             kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType,
             nullptr, &props);
 

@@ -53,7 +53,7 @@ ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)
 
-CFLAGS	+=	$(INCLUDE) -D__SWITCH__
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DSK_GANESH -DSK_GL
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
@@ -61,7 +61,7 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,--gc-sections,-Map,$(notdir $*.map) \
 	-L$(TOPDIR)/../skia/out/horizon
 
-LIBS	:=  -lskia -lharfbuzz -licu -lparticles \
+LIBS	:=  -lskia -lharfbuzz -licu \
 	-lpathkit -lpng -lsksg -lskshaper -lwebp \
 	-lexpat -lfreetype -lturbojpeg \
 	-lzlib -lz -lbz2 \
