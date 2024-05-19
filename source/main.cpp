@@ -14,11 +14,17 @@
 #include "include/core/SkSurface.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkFont.h"
+#include "include/core/SkFontMgr.h"
 #include "include/effects/SkGradientShader.h"
 #include "include/effects/SkDiscretePathEffect.h"
 
+#include "include/ports/SkFontMgr_empty.h"
+
 // #define SK_GL
 #include "include/gpu/ganesh/SkSurfaceGanesh.h"
+#include "include/gpu/ganesh/gl/egl/GrGLMakeEGLInterface.h"
+#include "include/gpu/ganesh/gl/GrGLDirectContext.h"
+#include "include/gpu/ganesh/gl/GrGLBackendSurface.h"
 #include "include/gpu/GrBackendSurface.h"
 #include "include/gpu/GrDirectContext.h"
 #include "include/gpu/gl/GrGLInterface.h"
@@ -30,6 +36,7 @@
 
 int nx_link_sock = -1;
 
+sk_sp<SkFontMgr> mgr;
 sk_sp<SkTypeface> font_standard;
 sk_sp<SkTypeface> dm_sans_regular;
 
@@ -199,20 +206,23 @@ static void load_fonts(void)
     PlFontData font;
     Result res = plGetSharedFontByType(&font, PlSharedFontType_Standard);
 
+    mgr = SkFontMgr_New_Custom_Empty();
+
     if(R_SUCCEEDED(res))
     {
-        font_standard = SkTypeface::MakeFromData(SkData::MakeWithoutCopy(font.address, font.size), 0);
+        font_standard = mgr->makeFromData(SkData::MakeWithoutCopy(font.address, font.size));
     }
 
-    if(font_standard.get() == nullptr)
-    {
-        font_standard = SkTypeface::MakeDefault();
-    }
+    // if(font_standard.get() == nullptr)
+    // {
+    //     font_standard = SkTypeface::MakeDefault();
+    //     font_standard = mgr->makeDefault();
+    // }
 
-    dm_sans_regular = SkTypeface::MakeFromFile("romfs:/DMSans-Regular.ttf", 0);
+    dm_sans_regular = mgr->makeFromFile("romfs:/DMSans-Regular.ttf", 0);
     if(dm_sans_regular.get() == nullptr)
     {
-        dm_sans_regular = SkTypeface::MakeDefault();
+        // dm_sans_regular = SkTypeface::MakeDefault();
     }
 }
 
@@ -222,17 +232,21 @@ int main(int argc, char* argv[])
     if (!initEgl(nwindowGetDefault()))
         return EXIT_FAILURE;
 
-    auto interface = GrGLMakeNativeInterface();
-
-    auto ctx = GrDirectContext::MakeGL();
+    auto interface = GrGLInterfaces::MakeEGL();
+    auto ctx = GrDirectContexts::MakeGL(interface);
 
     GrGLint buffer;
     interface->fFunctions.fGetIntegerv(GL_FRAMEBUFFER_BINDING, &buffer);
-    GrGLFramebufferInfo info;
-    info.fFormat = GL_RGBA8;
-    info.fFBOID = (GrGLuint)buffer;
+    
+    // GrGLFramebufferInfo info;
+    // info.fFormat = GL_RGBA8;
+    // info.fFBOID = (GrGLuint)buffer;
 
-    GrBackendRenderTarget target(FB_WIDTH, FB_HEIGHT, 0, 8, info);
+    GrGLFramebufferInfo framebuffer_info;
+    framebuffer_info.fFormat = GL_RGBA8;
+    framebuffer_info.fFBOID = 0;
+
+    GrBackendRenderTarget target = GrBackendRenderTargets::MakeGL(FB_WIDTH, FB_HEIGHT, 0, 8, framebuffer_info);
 
     SkSurfaceProps props;
 
@@ -261,16 +275,19 @@ int main(int argc, char* argv[])
             break; // break in order to return to hbmenu
 
         canvas->clear(SK_ColorBLACK);
-        draw_star(canvas);
+        // draw_star(canvas);
 
         SkPaint paint;
         paint.setColor(SK_ColorRED);
         paint.setAntiAlias(true);
 
-        canvas->drawString("Standard Font", 20, 300, SkFont(font_standard, 36), paint);
-        canvas->drawString("DM Sans Regular", 20, 340, SkFont(dm_sans_regular, 36), paint);
+        canvas->drawRect({ 10, 10, 40, 40}, paint);
+        // canvas->drawString("Standard Font", 20, 300, SkFont(font_standard, 36), paint);
+        // canvas->drawString("DM Sans Regular", 20, 340, SkFont(dm_sans_regular, 36), paint);
 
-        canvas->flush();
+        if (auto dContext = GrAsDirectContext(canvas->recordingContext())) {
+            dContext->flushAndSubmit();
+        }
         eglSwapBuffers(s_display, s_surface);
     }
 

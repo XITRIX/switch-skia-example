@@ -59,12 +59,12 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,--gc-sections,-Map,$(notdir $*.map) \
-	-L$(TOPDIR)/../skia/out/horizon
+	-L$(TOPDIR)/../skia/out/switch
 
 LIBS	:=  -lskia -lharfbuzz -licu \
 	-lpathkit -lpng -lsksg -lskshaper -lwebp \
 	-lexpat -lfreetype -lturbojpeg \
-	-lzlib -lz -lbz2 \
+	-lz -lbz2 \
 	-lglad -lEGL -lglapi -ldrm_nouveau -lnx 
 
 #---------------------------------------------------------------------------------
